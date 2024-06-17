@@ -1,5 +1,12 @@
 ## Blog Api using django Rest framework
 
+### project requirements 
+
+1. Django
+2. djangorestframework
+3. djangorestframework-simplejwt
+
+
 ###  Api Endpoints
 
 *User Register/Signup (POST)*
