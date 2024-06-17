@@ -6,49 +6,55 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 
 
-class ResgisterSerializer(serializers.Serializer):
-
+class RegisterSerializer(serializers.Serializer):
     username = serializers.CharField()
-    password = serializers.CharField()
+    password = serializers.CharField(write_only=True)
 
     def validate(self, data):
+        username = data.get('username')
+        password = data.get('password')
 
-        if User.objects.filter(username=data['username']).exists():
-            raise serializers.ValidationError('username is taken')
+        # Check if the username already exists (case insensitive)
+        if User.objects.filter(username__iexact=username).exists():
+            raise serializers.ValidationError('Username is taken')
 
         return data
 
     def create(self, validated_data):
-        user = User.objects.create(username=validated_data['username'].lower())
-        user.set_password(validated_data['password'])
+        username = validated_data['username'].lower()
+        password = validated_data['password']
+
+        # Create the user with a lowercased username
+        user = User.objects.create(username=username)
+        user.set_password(password)
         user.save()
 
-        return validated_data
+        return {
+            'username': user.username,
+            'message': 'User created successfully'
+        }
 
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
-    password = serializers.CharField()
+    password = serializers.CharField(write_only=True)
 
     def validate(self, data):
+        username = data.get('username')
+        password = data.get('password')
 
-        if not User.objects.filter(username = data['username']).exists():
-            raise serializers.ValidationError('account not found')
+        if not username or not password:
+            raise serializers.ValidationError('Username and password are required')
 
-        return data
-
-    def get_jwt_token(self, data):
-
-        user = authenticate(username= data['username'], password= data['password'])
-
+        # Case insensitive user lookup and authentication
+        user = authenticate(username=username, password=password)
         if not user:
-            return {'message': 'invalid credentials', 'data': {}}
+            raise serializers.ValidationError('Invalid credentials')
 
         refresh = RefreshToken.for_user(user)
 
-        return {'message': 'login success',
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-                }
-
-
+        return {
+            'username': user.username,
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }

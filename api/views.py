@@ -3,7 +3,7 @@ from django.shortcuts import render
 # Create your views here.
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import ResgisterSerializer , LoginSerializer
+from .serializers import RegisterSerializer , LoginSerializer
 from rest_framework import status
 
 
@@ -13,7 +13,7 @@ class RegisterView(APIView):
         try:
             data = request.data
 
-            serializer = ResgisterSerializer(data = data)
+            serializer = RegisterSerializer(data = data)
 
             if not serializer.is_valid():
                 return Response({
@@ -36,26 +36,11 @@ class RegisterView(APIView):
 
 
 class LoginView(APIView):
-
-    def post(self, request):
-        try:
-            data = request.data
-            serializer = LoginSerializer(data = data)
-
-            if not serializer.is_valid():
-                return Response({
-                    'data': serializer.errors,
-                    'message': 'something went wrong'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            response = serializer.get_jwt_token(serializer.data)
-
-            return Response(response, status=status.HTTP_200_OK)
-
-
-
-        except Exception:
-            return Response({
-                'data': {},
-                'message': 'something went wrong'
-            }, status=status.HTTP_400_BAD_REQUEST)
+    def post(self, request, *args, **kwargs):
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            tokens = serializer.validated_data
+            return Response(tokens, status=status.HTTP_200_OK)
+        return Response({'data': serializer.errors,
+                         'message': 'Something went wrong'},
+                        status=status.HTTP_400_BAD_REQUEST)
